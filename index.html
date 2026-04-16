@@ -193,12 +193,21 @@
         function getIconForTipo(tipo) {
             if (!tipo) return 'fa-solid fa-location-dot';
             const t = String(tipo).toLowerCase();
-            if (t.includes('bacheo') || t.includes('pavimento') || t.includes('hormigon') || t.includes('asfalto')) return 'fa-solid fa-road';
+            
+            if (t.includes('mural')) return 'fa-solid fa-paintbrush';
+            if (t.includes('arbol') || t.includes('árbol') || t.includes('arbolado')) return 'fa-solid fa-tree';
+            if (t.includes('luz') || t.includes('ilumina') || t.includes('led') || t.includes('luminaria')) return 'fa-solid fa-lightbulb';
+            if (t.includes('rampa')) return 'fa-solid fa-wheelchair';
+            if (t.includes('piso')) return 'fa-solid fa-table-cells-large'; 
+            if (t.includes('cordon') || t.includes('cordón')) return 'fa-solid fa-road'; 
+            if (t.includes('reductor')) return 'fa-solid fa-car'; 
+            if (t.includes('bacheo') || t.includes('pavimento') || t.includes('hormigon') || t.includes('asfalto') || t.includes('tj') || t.includes('pali')) return 'fa-solid fa-road';
+            
             if (t.includes('refugio') || t.includes('parada') || t.includes('colectivo')) return 'fa-solid fa-bus-simple';
-            if (t.includes('luz') || t.includes('ilumina') || t.includes('led')) return 'fa-solid fa-lightbulb';
             if (t.includes('salud') || t.includes('hospital') || t.includes('clinica')) return 'fa-solid fa-house-medical';
             if (t.includes('plaza') || t.includes('parque') || t.includes('verde')) return 'fa-solid fa-tree';
             if (t.includes('seguridad') || t.includes('camara') || t.includes('policia') || t.includes('alarma')) return 'fa-solid fa-shield-halved';
+            
             return 'fa-solid fa-location-dot'; 
         }
 
