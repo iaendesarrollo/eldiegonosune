@@ -74,6 +74,27 @@
             margin-right: 4px !important;
         }
 
+        /* ----- ANIMACIONES PARA LA CAPA RECORRIDO ----- */
+        /* Animación titilante para los puntos */
+        @keyframes pulse-blink {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); opacity: 0.8; }
+            50% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); opacity: 1; }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); opacity: 0.8; }
+        }
+        .blink-marker {
+            animation: pulse-blink 1.5s infinite ease-in-out;
+        }
+
+        /* Animación de recorrido en bucle (línea punteada que se mueve) */
+        @keyframes flow-animation {
+            from { stroke-dashoffset: 30; }
+            to { stroke-dashoffset: 0; }
+        }
+        .animated-route-line {
+            stroke-dasharray: 10, 15;
+            animation: flow-animation 1s linear infinite;
+        }
+
         /* Ajustes de Altura para Dashboard */
         @media (min-width: 1024px) {
             .app-container {
@@ -102,7 +123,6 @@
 
     <!-- Encabezado Institucional -->
     <header class="bg-[#51A5D4] relative z-20 flex items-center justify-center w-full shrink-0 h-[100px] overflow-hidden">
-        <!-- Ruta Relativa: Buscará la imagen en la misma carpeta que index.html -->
         <img src="EL DIEGO NOS UNE.jpg" 
              alt="El Diego Nos Une" 
              class="h-full w-auto object-contain py-2"
@@ -172,10 +192,10 @@
         lucide.createIcons();
 
         // ---------------------------------------------------------
-        // RUTA RELATIVA: Buscará el archivo CSV en la misma carpeta.
-        // Asegúrate de que el CSV se llame exactamente así.
+        // RUTAS RELATIVAS A LOS ARCHIVOS DE DATOS
         // ---------------------------------------------------------
         const CSV_URL = 'EL DIEGO NOS UNE - Hoja 1.csv'; 
+        const RECORRIDO_CSV_URL = 'Recorrido.csv'; 
         
         let map;
         let capasPorTipo = {};
@@ -194,6 +214,7 @@
             if (!tipo) return 'fa-solid fa-location-dot';
             const t = String(tipo).toLowerCase();
             
+            if (t.includes('recorrido')) return 'fa-solid fa-person-digging';
             if (t.includes('mural')) return 'fa-solid fa-paintbrush';
             if (t.includes('arbol') || t.includes('árbol') || t.includes('arbolado')) return 'fa-solid fa-tree';
             if (t.includes('luz') || t.includes('ilumina') || t.includes('led') || t.includes('luminaria')) return 'fa-solid fa-lightbulb';
@@ -219,9 +240,87 @@
             setTimeout(() => {
                 map.invalidateSize();
                 cargarDatos();
+                cargarRecorrido();
             }, 500);
         }
 
+        // Carga de la capa de Recorrido (WKT)
+        function cargarRecorrido() {
+            Papa.parse(RECORRIDO_CSV_URL, {
+                download: true,
+                delimiter: ";", // El archivo de recorrido está separado por punto y coma
+                header: true,
+                skipEmptyLines: true,
+                complete: function(results) {
+                    procesarRecorrido(results.data);
+                },
+                error: function(err) {
+                    console.error("No se encontró o no se pudo cargar Recorrido.csv", err);
+                }
+            });
+        }
+
+        function procesarRecorrido(data) {
+            if (!capasPorTipo['Recorrido']) {
+                capasPorTipo['Recorrido'] = L.layerGroup();
+            }
+
+            data.forEach(row => {
+                const wkt = row.WKT || row.wkt;
+                const nombre = row.nombre || row.Nombre || 'Punto de Recorrido';
+
+                if (wkt) {
+                    // Si es un Punto (extremos titilantes con hombres trabajando)
+                    if (wkt.startsWith("POINT")) {
+                        const match = wkt.match(/POINT\s*\(([-.\d]+)\s+([-.\d]+)\)/);
+                        if (match) {
+                            const lon = parseFloat(match[1]);
+                            const lat = parseFloat(match[2]);
+
+                            const markerHtml = `
+                                <div class="blink-marker" style="background-color: #F59E0B; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white;">
+                                    <i class="fa-solid fa-person-digging text-white" style="font-size: 15px;"></i>
+                                </div>
+                            `;
+                            
+                            const customIcon = L.divIcon({ 
+                                html: markerHtml, 
+                                className: 'custom-div-icon bg-transparent border-none', 
+                                iconSize: [34, 34], 
+                                iconAnchor: [17, 17] 
+                            });
+
+                            const marker = L.marker([lat, lon], { icon: customIcon });
+                            marker.bindPopup(`<div class="font-sans text-sm p-1"><b class="text-[#0B5F8D] block text-xs tracking-wider uppercase mb-1">Punto del Recorrido</b><span class="text-[#0F172A] font-medium">${nombre}</span></div>`);
+                            marker.addTo(capasPorTipo['Recorrido']);
+                        }
+                    } 
+                    // Si es la Línea (línea animada en loop)
+                    else if (wkt.startsWith("LINESTRING")) {
+                        const match = wkt.match(/LINESTRING\s*\((.+)\)/);
+                        if (match) {
+                            const coordsStr = match[1].split(",");
+                            const latLngs = coordsStr.map(c => {
+                                const pts = c.trim().split(/\s+/);
+                                return [parseFloat(pts[1]), parseFloat(pts[0])]; // Leaflet usa [lat, lon]
+                            });
+
+                            const polyline = L.polyline(latLngs, {
+                                color: '#F59E0B',
+                                weight: 6,
+                                className: 'animated-route-line' // Clase CSS que anima el flujo
+                            });
+                            polyline.bindPopup(`<div class="font-sans text-sm p-1"><b class="text-[#0B5F8D] block text-xs tracking-wider uppercase mb-1">Trayecto</b><span class="text-[#0F172A] font-medium">${nombre}</span></div>`);
+                            polyline.addTo(capasPorTipo['Recorrido']);
+                        }
+                    }
+                }
+            });
+
+            crearMenuFiltros(['Recorrido']);
+        }
+
+        // Carga de la capa General (El Diego Nos Une - Puntos)
         function cargarDatos() {
             Papa.parse(CSV_URL, {
                 download: true,
@@ -232,12 +331,11 @@
                     procesarDatos(results.data);
                 },
                 error: function(err) {
-                    console.error("Error al cargar el CSV:", err);
+                    console.error("Error al cargar el CSV general:", err);
                     document.getElementById('msg-vacio').innerHTML = `
                         <div class="bg-red-50 text-red-600 p-3 rounded text-xs border border-red-200 mt-2">
                             <b>Error de Carga Local (CORS)</b><br>
-                            Si abriste este archivo directamente con doble clic en tu computadora, los navegadores bloquean la carga de archivos por seguridad.<br><br>
-                            <b>Solución:</b> Sube el <i>index.html</i>, el <i>.csv</i> y el <i>.jpg</i> juntos a GitHub y activa <b>GitHub Pages</b>.
+                            Sube <i>index.html</i>, los archivos <i>.csv</i> y el <i>.jpg</i> juntos a tu servidor o GitHub.
                         </div>`;
                 }
             });
@@ -284,7 +382,6 @@
                         
                         const marker = L.marker([lat, lon], { icon: customIcon });
                         
-                        // Armar el Popup (Tooltip) ocultando Latitud y Longitud (Y con Glassmorphism)
                         let popupContent = '<div class="font-sans text-sm p-1"><ul class="space-y-2">';
                         for (let key in row) {
                             if(row[key] !== null && row[key] !== '') {
@@ -313,8 +410,6 @@
 
             if (puntosProcesados > 0 && globalBounds.isValid()) {
                 map.fitBounds(globalBounds, { padding: [40, 40] });
-            } else if (puntosProcesados === 0) {
-                 document.getElementById('lista-tipos').innerHTML = `<p class="text-xs text-[#64748B] italic">No se encontraron coordenadas válidas en el archivo.</p>`;
             }
         }
 
@@ -328,14 +423,17 @@
                 layerGroup.addTo(map); 
 
                 const iconClass = getIconForTipo(tipo);
+                // Si es recorrido le damos el color naranja específico que usamos para la capa
+                const bgColor = tipo === 'Recorrido' ? '#F59E0B' : '#E2F1F7';
+                const iconColor = tipo === 'Recorrido' ? 'text-white' : 'text-[#0B5F8D]';
                 
                 const item = document.createElement('label');
                 item.id = `filtro-${tipo.replace(/\s+/g, '-')}`;
                 item.className = 'flex items-center gap-3 cursor-pointer group p-2 hover:bg-[#F3F6F9] rounded transition-colors border border-transparent hover:border-[#E6EDF3]';
                 item.innerHTML = `
                     <input type="checkbox" checked class="w-4 h-4 accent-[#0B5F8D]" onchange="toggleLayer('${tipo}', this.checked)">
-                    <span class="w-7 h-7 rounded-full flex items-center justify-center bg-[#E2F1F7] text-[#0B5F8D] shadow-sm border border-[#D1E1F0]">
-                        <i class="${iconClass} text-[11px]"></i>
+                    <span class="w-7 h-7 rounded-full flex items-center justify-center shadow-sm border border-[#D1E1F0]" style="background-color: ${bgColor};">
+                        <i class="${iconClass} ${iconColor} text-[11px]"></i>
                     </span>
                     <span class="text-sm text-[#0F172A] font-medium truncate flex-1" title="${tipo}">${tipo}</span>
                 `;
