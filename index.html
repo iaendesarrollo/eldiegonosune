@@ -75,11 +75,11 @@
         }
 
         /* ----- ANIMACIONES PARA LA CAPA RECORRIDO ----- */
-        /* Animación titilante para los puntos */
+        /* Animación titilante para los puntos (Modificado a Azul Oscuro: rgba(30, 58, 138, ...)) */
         @keyframes pulse-blink {
-            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7); opacity: 0.8; }
-            50% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(245, 158, 11, 0); opacity: 1; }
-            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(245, 158, 11, 0); opacity: 0.8; }
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(30, 58, 138, 0.7); opacity: 0.8; }
+            50% { transform: scale(1.1); box-shadow: 0 0 0 10px rgba(30, 58, 138, 0); opacity: 1; }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(30, 58, 138, 0); opacity: 0.8; }
         }
         .blink-marker {
             animation: pulse-blink 1.5s infinite ease-in-out;
@@ -277,8 +277,9 @@
                             const lon = parseFloat(match[1]);
                             const lat = parseFloat(match[2]);
 
+                            // Actualizado a azul oscuro (#1E3A8A)
                             const markerHtml = `
-                                <div class="blink-marker" style="background-color: #F59E0B; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white;">
+                                <div class="blink-marker" style="background-color: #1E3A8A; width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; border: 2px solid white;">
                                     <i class="fa-solid fa-person-digging text-white" style="font-size: 15px;"></i>
                                 </div>
                             `;
@@ -305,8 +306,9 @@
                                 return [parseFloat(pts[1]), parseFloat(pts[0])]; // Leaflet usa [lat, lon]
                             });
 
+                            // Actualizado a azul oscuro (#1E3A8A)
                             const polyline = L.polyline(latLngs, {
-                                color: '#F59E0B',
+                                color: '#1E3A8A',
                                 weight: 6,
                                 className: 'animated-route-line' // Clase CSS que anima el flujo
                             });
@@ -423,8 +425,8 @@
                 layerGroup.addTo(map); 
 
                 const iconClass = getIconForTipo(tipo);
-                // Si es recorrido le damos el color naranja específico que usamos para la capa
-                const bgColor = tipo === 'Recorrido' ? '#F59E0B' : '#E2F1F7';
+                // Si es recorrido le damos el color azul oscuro específico que usamos para la capa
+                const bgColor = tipo === 'Recorrido' ? '#1E3A8A' : '#E2F1F7';
                 const iconColor = tipo === 'Recorrido' ? 'text-white' : 'text-[#0B5F8D]';
                 
                 const item = document.createElement('label');
